@@ -97,20 +97,23 @@ class Enrollment(models.Model):
 
 # <HINT> Create a Question Model with:
     # Used to persist question content for a course
-    # Has a One-To-Many (or Many-To-Many if you want to reuse questions) relationship with course >(course? don't you mean lesson?)
+    # Has a One-To-Many (or Many-To-Many if you want to reuse questions) relationship with course
     # Has a grade point for each question
     # Has question content
     # Other fields and methods you would like to design
 class Question(models.Model):
-    # Foreign key to lesson
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    # Foreign key to lesson 
+    # >don't you mean course? the exam questions are for the course not lessons, and since there's only one exam per course we don't need a Test/Exam object, 
+    # though not having one seems wrong
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     # question text
-    text = models.CharField(null=False, max_length=200)
+    text = models.CharField(max_length=200)
     # question grade/mark
-    mark = models.IntegerField(default=0)
+    # >is this how much the question is worth?
+    grade = models.IntegerField(default=0)
 
     # <HINT> A sample model method to calculate if learner get the score of the question
-    # >do questions get partial marks? should mark be a float? when do we call this?
+    # >do questions get partial marks? should mark be a float? when do we call this? shouldn't this method handle updating the mark?
     def is_correct(self, selected_ids):
         all_answers = self.choice_set.filter(is_correct=True).count()
         selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
@@ -126,13 +129,25 @@ class Question(models.Model):
     # Choice content
     # Indicate if this choice of the question is a correct one or not
     # Other fields and methods you would like to design
-# class Choice(models.Model):
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    text = models.CharField(max_length=200)
+    is_correct = models.BooleanField()
+
 
 # <HINT> The submission model
 # One enrollment could have multiple submission
 # One submission could have multiple choices
 # One choice could belong to multiple submissions
-#class Submission(models.Model):
-#    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-#    choices = models.ManyToManyField(Choice)
-#    Other fields and methods you would like to design
+class Submission(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
+    choices = models.ManyToManyField(Choice)
+
+
+# Submission Choice model
+# One submission could have multiple choices
+# One choice could have multiple submissions
+# Working back from choices to a question is going to be a pain. groupby?
+class SubmissionChoice(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
+    choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
